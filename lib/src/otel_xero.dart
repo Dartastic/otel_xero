@@ -2,7 +2,6 @@
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
 import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
-import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_xero_suppression.dart';
 
@@ -52,48 +51,60 @@ Future<T> tracedXero<T>({
   final t = tracer ?? OTel.tracerProvider().getTracer('otel_xero');
   final span = t.startSpan('xero $operation', kind: SpanKind.client);
   try {
-    span.setStringAttribute('rpc.system', 'xero');
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('rpc.system', 'xero')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.tenantId != null) {
-        span.setStringAttribute('xero.tenant.id', res.tenantId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('xero.tenant.id', res.tenantId!)]));
       }
       if (res.tenantName != null) {
-        span.setStringAttribute('xero.tenant.name', res.tenantName!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('xero.tenant.name', res.tenantName!)]));
       }
       if (res.entity != null) {
-        span.setStringAttribute('xero.entity', res.entity!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('xero.entity', res.entity!)]));
       }
       if (res.entityId != null) {
-        span.setStringAttribute('xero.entity.id', res.entityId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('xero.entity.id', res.entityId!)]));
       }
       if (res.contactId != null) {
-        span.setStringAttribute('xero.contact.id', res.contactId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('xero.contact.id', res.contactId!)]));
       }
       if (res.invoiceId != null) {
-        span.setStringAttribute('xero.invoice.id', res.invoiceId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('xero.invoice.id', res.invoiceId!)]));
       }
       if (res.amount != null) {
-        span.setDoubleAttribute('xero.amount', res.amount!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeDouble('xero.amount', res.amount!)]));
       }
       if (res.currency != null) {
-        span.setStringAttribute('xero.currency', res.currency!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('xero.currency', res.currency!)]));
       }
       if (res.statusCode != null) {
-        span.setIntAttribute('http.response.status_code', res.statusCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
       }
       if (res.errorCode != null) {
-        span.setStringAttribute('xero.error.code', res.errorCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('xero.error.code', res.errorCode!)]));
       }
-      final fail =
-          res.errorCode != null ||
+      final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.setStringAttribute(
-          ErrorResource.errorType.key,
-          res.errorCode ?? 'xero.error',
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            ErrorResource.errorType.key,
+            res.errorCode ?? 'xero.error',
+          )
+        ]));
         span.setStatus(SpanStatusCode.Error, res.errorMessage);
       }
     }
