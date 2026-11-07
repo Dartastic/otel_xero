@@ -1,11 +1,12 @@
-// Licensed under the Dartastic Pro Software License Agreement.
+// Licensed under the Apache License, Version 2.0
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
-import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
+import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_xero_suppression.dart';
 
 class XeroResult {
+  /// Creates a result.
   const XeroResult({
     this.tenantId,
     this.tenantName,
@@ -33,8 +34,13 @@ class XeroResult {
   final String? errorMessage;
 }
 
+/// What a traced call returned: the value for the caller plus fields
+/// recorded on the span.
 class XeroCallResult<T> {
+  /// Creates a call result.
   const XeroCallResult({required this.value, this.result});
+
+  /// The value returned to the caller.
   final T value;
   final XeroResult? result;
 }
@@ -42,66 +48,67 @@ class XeroCallResult<T> {
 Future<T> tracedXero<T>({
   required String operation,
   required Future<XeroCallResult<T>> Function() invoke,
-  Tracer? tracer,
+  APITracer? tracer,
 }) async {
   if (xeroInstrumentationSuppressed()) {
     final r = await invoke();
     return r.value;
   }
-  final t = tracer ?? OTel.tracerProvider().getTracer('otel_xero');
+  final t = tracer ?? OTelAPI.tracerProvider().getTracer('otel_xero');
   final span = t.startSpan('xero $operation', kind: SpanKind.client);
   try {
     span.addAttributes(
-        OTel.attributes([OTel.attributeString('rpc.system', 'xero')]));
+        OTelAPI.attributes([OTelAPI.attributeString('rpc.system', 'xero')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.tenantId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('xero.tenant.id', res.tenantId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('xero.tenant.id', res.tenantId!)]));
       }
       if (res.tenantName != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('xero.tenant.name', res.tenantName!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('xero.tenant.name', res.tenantName!)]));
       }
       if (res.entity != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('xero.entity', res.entity!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('xero.entity', res.entity!)]));
       }
       if (res.entityId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('xero.entity.id', res.entityId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('xero.entity.id', res.entityId!)]));
       }
       if (res.contactId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('xero.contact.id', res.contactId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('xero.contact.id', res.contactId!)]));
       }
       if (res.invoiceId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('xero.invoice.id', res.invoiceId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('xero.invoice.id', res.invoiceId!)]));
       }
       if (res.amount != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeDouble('xero.amount', res.amount!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeDouble('xero.amount', res.amount!)]));
       }
       if (res.currency != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('xero.currency', res.currency!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('xero.currency', res.currency!)]));
       }
       if (res.statusCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeInt('http.response.status_code', res.statusCode!)
+        ]));
       }
       if (res.errorCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('xero.error.code', res.errorCode!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('xero.error.code', res.errorCode!)]));
       }
       final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString(
-            ErrorResource.errorType.key,
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString(
+            ErrorAttributes.errorType.key,
             res.errorCode ?? 'xero.error',
           )
         ]));
